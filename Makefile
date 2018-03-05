@@ -14,7 +14,7 @@ target/boot.o: src/asm/boot.asm
 	nasm -f elf64 src/asm/boot.asm -o target/boot.o
 
 target/kernel.bin: target/multiboot_header.o target/boot.o src/asm/linker.ld cargo
-	ld -n -o target/kernel.bin -T src/asm/linker.ld target/multiboot_header.o target/boot.o target/x86_64-unknown-withered-gnu/release/libwithered.a
+	ld -n --gc-sections -o target/kernel.bin -T src/asm/linker.ld target/multiboot_header.o target/boot.o target/x86_64-unknown-withered-gnu/release/libwithered.a
 
 target/os.iso: target/kernel.bin src/asm/grub.cfg
 	mkdir -p target/isos/boot/grub
@@ -28,7 +28,7 @@ clean:
 build: target/kernel.bin # dumb semantic hack
 
 cargo:
-	xargo build --release --target x86_64-unknown-withered-gnu
+	RUST_TARGET_PATH=$(pwd) xargo build --release --target x86_64-unknown-withered-gnu
 
 run: target/os.iso
 	qemu-system-x86_64 -cdrom target/os.iso
