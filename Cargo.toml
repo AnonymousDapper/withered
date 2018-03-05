@@ -1,0 +1,12 @@
+[package]
+name = "withered"
+version = "0.1.0"
+authors = ["AnonymousDapper <jreasley14@gmail.com>"]
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+
+[profile.release]
+panic = "abort"
