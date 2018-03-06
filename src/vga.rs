@@ -1,5 +1,28 @@
-// vga module
-// Copyright AnonymousDapper 2018
+/*
+
+MIT License
+
+Copyright (c) 2018 AnonymousDapper
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
 
 extern crate volatile;
 extern crate spin;
@@ -22,17 +45,17 @@ pub enum Color {
   Blue = 1,
   Green = 2,
   Cyan = 3,
-  Red = 4,
+  Red = 4, // Error
   Magenta = 5,
   Brown = 6,
-  LightGrey = 7,
-  DarkGrey = 8,
+  LightGrey = 7, // Log
+  DarkGrey = 8, // Debug
   LightBlue = 9,
   LightGreen = 10,
   LightCyan = 11,
   LightRed = 12,
   Pink = 13,
-  Yellow = 14,
+  Yellow = 14, // Warn
   White = 15
 }
 
@@ -160,6 +183,26 @@ macro_rules! println {
   ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
+macro_rules! debug {
+  ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::DarkGrey, format_args!(concat!("[DEBUG] ", concat!($fmt, "\n")))));
+  ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::DarkGrey, format_args!(concat!("[DEBUG] ", concat!($fmt, "\n")), $($arg)*)));
+}
+
+macro_rules! log {
+  ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::LightGrey, format_args!(concat!("[INFO] ", concat!($fmt, "\n")))));
+  ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::LightGrey, format_args!(concat!("[INFO] ", concat!($fmt, "\n")), $($arg)*)));
+}
+
+macro_rules! warn {
+  ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::Yellow, format_args!(concat!("[WARN] ", concat!($fmt, "\n")))));
+  ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::Yellow, format_args!(concat!("[WARN] ", concat!($fmt, "\n")), $($arg)*)));
+}
+
+macro_rules! error {
+  ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::Red, format_args!(concat!("[ERROR] ", concat!($fmt, "\n")))));
+  ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::Red, format_args!(concat!("[ERROR] ", concat!($fmt, "\n")), $($arg)*)));
+}
+
 // public interface
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
   column_pos: 0,
@@ -179,6 +222,13 @@ pub fn clear_screen() {
 pub fn print(args: fmt::Arguments) {
   use core::fmt::Write;
   WRITER.lock().write_fmt(args).unwrap();
+}
+
+pub fn print_color(color: Color, args: fmt::Arguments) {
+  use core::fmt::Write;
+  let mut writer = WRITER.lock();
+  writer.fg_color = color;
+  writer.write_fmt(args).unwrap();
 }
 
 

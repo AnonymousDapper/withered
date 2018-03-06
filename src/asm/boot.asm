@@ -1,3 +1,25 @@
+; MIT License
+
+; Copyright (c) 2018 AnonymousDapper
+
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 global start
 
 extern kmain
@@ -5,16 +27,11 @@ extern kmain
 section .text
 bits 32
 
-error:
-	mov word [0xB8000], 0x0C45
-	mov word [0xB8002], 0x0C52
-	mov word [0xB8004], 0x0C52
-	mov word [0xB8006], 0x0C3A
-	mov word [0xB8008], 0x0C20
-	mov byte [0xB800a], al
-	hlt
-
 start:
+	; move multiboot pointer to edi
+	mov esp, stack_top
+	mov edi, ebx
+
 	; init page tables
 	mov eax, p3_table
 	or eax, 0b11
@@ -69,6 +86,8 @@ start:
 	; long mode time
 	jmp gdt64.code:kmain
 
+	hlt ; if we get to this, there's a problem
+
 section .bss
 
 align 4096
@@ -81,6 +100,11 @@ p3_table:
 
 p2_table:
 	resb 4096
+
+stack_bottom:
+	resb 4096 * 4
+
+stack_top:
 
 section .rodata
 gdt64:
@@ -95,23 +119,4 @@ gdt64:
 .pointer:
 	dw .pointer - gdt64 - 1
 	dq gdt64
-
-section .text
-bits 64
-
-; long_mode_start:
-; 	; long mode init is done, lets print a message
-; 	mov dword [0xB8000], 0x0E200E3C ; '< '
-; 	mov dword [0xB8004], 0x0E490E57 ; 'WI'
-; 	mov dword [0xB8008], 0x0E480E54 ; 'TH'
-; 	mov dword [0xB800C], 0x0E520E45 ; 'ER'
-; 	mov dword [0xB8010], 0x0E440E45 ; 'ED'
-; 	mov dword [0xB8014], 0x0E3E0E20 ; ' >'
-
-; 	mov dword [0xB8018], 0x0E200E20
-; 	mov dword [0xB801C], 0x0E200E20
-; 	mov dword [0xB8020], 0x0E200E20
-; 	mov dword [0xB8024], 0x0E200E20
-; 	hlt
-
 
