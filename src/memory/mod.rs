@@ -25,8 +25,11 @@ SOFTWARE.
 */
 
 mod frame_alloc;
+mod paging;
 
 pub use self::frame_alloc::AreaFrameAllocator;
+
+use self::paging::PhysicalAddress;
 
 pub const PAGE_SIZE: usize = 4096;
 
@@ -40,6 +43,10 @@ impl Frame {
     Frame {
       number: addr / PAGE_SIZE
     }
+  }
+
+  fn start_address(&self) -> PhysicalAddress {
+    self.number * PAGE_SIZE
   }
 }
 

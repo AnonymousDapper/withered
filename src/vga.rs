@@ -28,7 +28,6 @@ extern crate volatile;
 extern crate spin;
 
 use core::fmt;
-use core::ptr::Unique;
 
 use self::volatile::Volatile;
 
@@ -86,7 +85,7 @@ pub struct Writer {
   column_pos: usize,
   fg_color: Color,
   bg_color: Color,
-  buffer: Unique<Buffer>
+  buffer: &'static mut Buffer
 }
 
 // writing to screen
@@ -105,7 +104,7 @@ impl Writer {
         let col = self.column_pos;
 
         let color = ColorCode::new(self.fg_color, self.bg_color);
-        self.buffer().chars[row][col].write(ScreenChar {
+        self.buffer.chars[row][col].write(ScreenChar {
           ascii_char: byte,
           color: color
         });
@@ -115,18 +114,11 @@ impl Writer {
     }
   }
 
-  fn buffer(&mut self) -> &mut Buffer {
-    unsafe {
-      self.buffer.as_mut()
-    }
-  }
-
   fn new_line(&mut self) {
     for row in 1..BUFFER_HEIGHT {
       for col in 0..BUFFER_WIDTH {
-        let buffer = self.buffer();
-        let character = buffer.chars[row][col].read();
-        buffer.chars[row - 1][col].write(character);
+        let character = self.buffer.chars[row][col].read();
+        self.buffer.chars[row - 1][col].write(character);
       }
     }
 
@@ -141,7 +133,7 @@ impl Writer {
     };
 
     for col in 0..BUFFER_WIDTH {
-      self.buffer().chars[row][col].write(blank);
+      self.buffer.chars[row][col].write(blank);
     }
   }
 }
@@ -172,44 +164,53 @@ impl fmt::Write for Writer {
 }
 
 // macros and publics
+
+#[allow(unused_macros)]
 macro_rules! print {
   ($($arg:tt)*) => ({
     $crate::vga::print(format_args!($($arg)*));
   });
 }
 
+#[allow(unused_macros)]
 macro_rules! println {
   ($fmt:expr) => (print!(concat!($fmt, "\n")));
   ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
+#[allow(unused_macros)]
 macro_rules! debug {
   ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::DarkGrey, format_args!(concat!("[DEBUG] ", concat!($fmt, "\n")))));
   ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::DarkGrey, format_args!(concat!("[DEBUG] ", concat!($fmt, "\n")), $($arg)*)));
 }
 
+#[allow(unused_macros)]
 macro_rules! log {
   ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::LightGrey, format_args!(concat!("[INFO] ", concat!($fmt, "\n")))));
   ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::LightGrey, format_args!(concat!("[INFO] ", concat!($fmt, "\n")), $($arg)*)));
 }
 
+#[allow(unused_macros)]
 macro_rules! warn {
   ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::Yellow, format_args!(concat!("[WARN] ", concat!($fmt, "\n")))));
   ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::Yellow, format_args!(concat!("[WARN] ", concat!($fmt, "\n")), $($arg)*)));
 }
 
+#[allow(unused_macros)]
 macro_rules! error {
   ($fmt:expr) => ($crate::vga::print_color($crate::vga::Color::Red, format_args!(concat!("[ERROR] ", concat!($fmt, "\n")))));
   ($fmt:expr, $($arg:tt)*) => ($crate::vga::print_color($crate::vga::Color::Red, format_args!(concat!("[ERROR] ", concat!($fmt, "\n")), $($arg)*)));
 }
 
 // public interface
-pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
-  column_pos: 0,
-  fg_color: Color::LightGrey,
-  bg_color: Color::Black,
-  buffer: unsafe { Unique::new_unchecked(0xB8000 as *mut _) }
-});
+lazy_static! {
+  pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+    column_pos: 0,
+    fg_color: Color::LightGrey,
+    bg_color: Color::Black,
+    buffer: unsafe { &mut *(0xB8000 as *mut Buffer) }
+  });
+}
 
 // clear screen
 pub fn clear_screen() {
@@ -219,11 +220,14 @@ pub fn clear_screen() {
 }
 
 // print
+
+#[allow(dead_code)]
 pub fn print(args: fmt::Arguments) {
   use core::fmt::Write;
   WRITER.lock().write_fmt(args).unwrap();
 }
 
+#[allow(dead_code)]
 pub fn print_color(color: Color, args: fmt::Arguments) {
   use core::fmt::Write;
   let mut writer = WRITER.lock();
@@ -232,10 +236,12 @@ pub fn print_color(color: Color, args: fmt::Arguments) {
 }
 
 
+#[allow(dead_code)]
 pub fn fg_color(color: Color) {
   WRITER.lock().fg_color = color;
 }
 
+#[allow(dead_code)]
 pub fn bg_color(color: Color) {
   WRITER.lock().bg_color = color;
 }

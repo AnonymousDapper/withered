@@ -24,14 +24,19 @@ SOFTWARE.
 
 */
 
-#![feature(lang_items)]
-#![feature(const_fn)]
-#![feature(unique)]
-
-#![no_std]
+#![feature(lang_items)] // redefine panic handler
+#![feature(const_fn)] // const fns
+#![no_std] // no std
 
 extern crate rlibc;
 extern crate multiboot2;
+extern crate x86_64;
+
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 mod vga;
@@ -88,13 +93,12 @@ pub extern fn kmain(mbt_info: usize) -> ! {
 
   let mut frame_allocator = memory::AreaFrameAllocator::new(kernel_start as usize, kernel_end as usize, mb_start, mb_end, mem_map_tag.memory_areas());
 
-  for i in 0.. {
+/*  for i in 0.. {
     if let None = frame_allocator.allocate_frame() {
-      debug!("Allocated {} memory frames, ({}Mib)", i, (i * 4096) / (1024 * 1024));
+      debug!("Allocated {} memory frames, ({}Mib)", i, (i as u64 * 4096) / (1024 * 1024));
       break;
     }
-  }
-
+  }*/
 
   loop { }
 }
