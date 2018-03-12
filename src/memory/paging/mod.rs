@@ -39,6 +39,7 @@ pub type PhysicalAddress = usize;
 pub type VirtualAddress = usize;
 
 // basically a Frame, but virtual instead of physical
+#[derive(Debug, Clone, Copy)]
 pub struct Page {
   number: usize
 }
@@ -168,14 +169,15 @@ impl ActivePageTable {
   }
 }
 
-/*pub fn test_paging<A>(allocator: &mut A) where A: FrameAllocator {
-  let mut page_table = unsafe { ActivePageTable::new() };
+pub struct InactivePageTable {
+  p4_frame: Frame
+}
 
-  let addr = 42 * 512 * 512 * 4096;
-  let page = Page::containing_address(addr);
-  let frame = allocator.allocate_frame().expect("no more frames");
-  debug!("None: {:?}, map to {:?}", page_table.translate(addr), frame);
-  page_table.map_to(page, frame, EntryFlags::empty(), allocator);
-  debug!("Some: {:?}", page_table.translate(addr));
-  debug!("next free frame: {:?}", allocator.allocate_frame());
-}*/
+impl InactivePageTable {
+  pub fn new(frame: Frame) -> InactivePageTable {
+    // TODO zero and r-map
+    InactivePageTable {
+      p4_frame: frame
+    }
+  }
+}
