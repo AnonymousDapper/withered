@@ -58,6 +58,22 @@ pub extern fn rust_begin_panic(fmt: core::fmt::Arguments, file: &'static str, li
   loop { }
 }
 
+fn enable_nxe_bit() {
+  use x86_64::registers::msr::{IA32_EFER, rdmsr, wrmsr};
+
+  let nxe_bit = 1 << 11;
+  unsafe {
+    let efer = rdmsr(IA32_EFER);
+    wrmsr(IA32_EFER, efer | nxe_bit);
+  }
+}
+
+fn enable_write_protect_bit() {
+  use x86_64::registers::control_regs::{cr0, cr0_write, Cr0};
+
+  unsafe { cr0_write(cr0() | Cr0::WRITE_PROTECT) };
+}
+
 #[no_mangle]
 pub extern fn kmain(mbt_info: usize) -> ! {
   vga::clear_screen();
@@ -93,12 +109,11 @@ pub extern fn kmain(mbt_info: usize) -> ! {
 
   let mut frame_allocator = memory::AreaFrameAllocator::new(kernel_start as usize, kernel_end as usize, mb_start, mb_end, mem_map_tag.memory_areas());
 
-/*  for i in 0.. {
-    if let None = frame_allocator.allocate_frame() {
-      debug!("Allocated {} memory frames, ({}Mib)", i, (i as u64 * 4096) / (1024 * 1024));
-      break;
-    }
-  }*/
+  enable_nxe_bit();
+  enable_write_protect_bit();
+  memory::remap_kernel(&mut frame_allocator, boot_info);
+  debug!("Successfully remapped kernel memory");
+  debug!("New frame: {:?}", frame_allocator.allocate_frame());
 
   loop { }
 }

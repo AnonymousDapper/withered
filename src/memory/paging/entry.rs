@@ -24,6 +24,8 @@ SOFTWARE.
 
 */
 
+use multiboot2::ElfSection;
+
 use memory::Frame;
 
 pub struct Entry(u64);
@@ -67,5 +69,27 @@ bitflags! {
     const HUGE_PAGE       = 1 << 7; // 0 in P1, P4 makes 1GiB in P3, and 2MiB in P2
     const GLOBAL          = 1 << 8; // page not flushed from cache on address space switch
     const NO_EXECUTE      = 1 << 63; // forbid executing code on page
+  }
+}
+
+impl EntryFlags {
+  pub fn from_elf_section_flags(section: &ElfSection) -> EntryFlags {
+    use multiboot2::{ELF_SECTION_ALLOCATED, ELF_SECTION_WRITABLE, ELF_SECTION_EXECUTABLE};
+
+    let mut flags = EntryFlags::empty();
+
+    if section.flags().contains(ELF_SECTION_ALLOCATED) {
+      flags = flags | EntryFlags::PRESENT;
+    }
+
+    if section.flags().contains(ELF_SECTION_WRITABLE) {
+      flags = flags | EntryFlags::WRITABLE;
+    }
+
+    if !section.flags().contains(ELF_SECTION_EXECUTABLE) {
+      flags = flags | EntryFlags::NO_EXECUTE;
+    }
+
+    flags
   }
 }
