@@ -41,10 +41,6 @@ extern crate bitflags;
 #[macro_use]
 mod vga;
 
-mod memory;
-
-use memory::FrameAllocator;
-
 #[lang = "eh_personality"]
 extern fn eh_personality() {
 
@@ -106,14 +102,6 @@ pub extern fn kmain(mbt_info: usize) -> ! {
   let mb_start = mbt_info;
   let mb_end = mb_start + (boot_info.total_size as usize);
   debug!("MB start: 0x{:x}, MB end: 0x{:x}", mb_start, mb_end);
-
-  let mut frame_allocator = memory::AreaFrameAllocator::new(kernel_start as usize, kernel_end as usize, mb_start, mb_end, mem_map_tag.memory_areas());
-
-  enable_nxe_bit();
-  enable_write_protect_bit();
-  memory::remap_kernel(&mut frame_allocator, boot_info);
-  debug!("Successfully remapped kernel memory");
-  debug!("New frame: {:?}", frame_allocator.allocate_frame());
 
   loop { }
 }
